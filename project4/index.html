@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image Warping and Mosaicing | Rishbha Jain</title>
+<meta name="description" content="CS280A Project 4 Part A: homographies, image rectification, mosaics, and cylindrical projection.">
+<style>
+body{max-width:1000px;margin:36px auto;padding:0 20px;font:17px/1.6 system-ui,sans-serif;color:#222;background:#fff}
+h1{font-size:2rem;line-height:1.2}h2{margin-top:3rem;padding-top:1rem;border-top:1px solid #ddd}h3{margin-top:2rem}
+a{color:#174f91}nav{display:flex;gap:8px 20px;flex-wrap:wrap;margin:24px 0}
+figure{margin:24px 0}img{display:block;max-width:100%;height:auto;margin:auto}figcaption,.small{font-size:14px;color:#444}
+figcaption{margin-top:8px}pre{overflow-x:auto;background:#f5f5f5;padding:16px;font-size:14px;line-height:1.55}
+table{border-collapse:collapse;width:100%;font-size:15px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #ddd}
+details{margin:18px 0}summary{cursor:pointer}code{font-size:.9em}footer{margin:48px 0 24px;border-top:1px solid #ddd;padding-top:16px}
+@media(max-width:600px){body{padding:0 14px;font-size:16px}h1{font-size:1.7rem}th,td{padding:8px 4px;font-size:13px}}
+</style>
+</head>
+<body>
+<h1>Image Warping and Mosaicing</h1>
+<p>Rishbha Jain · CS280A · Project 4, Part A</p>
+<nav aria-label="Sections"><a href="#photos">A.1 Photos</a><a href="#homography">A.2 Homography</a><a href="#rectification">A.3 Rectification</a><a href="#mosaics">A.4 Mosaics</a><a href="#cylindrical">A.5 Cylindrical</a><a href="#code">Code</a></nav>
+
+<h2 id="photos">A.1 — Photos</h2>
+<p>These nine photos show overlapping views of the same courtyard. I used three groups for the mosaics: 6205–6207, 6208–6210, and 6211–6213. The working images are 900 × 1200 pixels.</p>
+<figure><a href="assets/sources.jpg"><img src="assets/sources.jpg" width="1650" height="2100" loading="lazy" alt="The nine source photos, in order. Original HEIC files are included with the code."></a><figcaption>The nine source photos, in order. Original HEIC files are included with the code.</figcaption></figure>
+
+<h2 id="homography">A.2 — Recovering the homography</h2>
+<p>A homography maps a point (x, y) to (u, v). After multiplying by H, divide the first two coordinates by the third. Setting the last entry of H to 1 leaves eight unknowns.</p>
+<pre>H = [ h₁ h₂ h₃ ]      h = [h₁ h₂ h₃ h₄ h₅ h₆ h₇ h₈]ᵀ
+    [ h₄ h₅ h₆ ]
+    [ h₇ h₈  1 ]
+
+xh₁ + yh₂ + h₃ − uxh₇ − uyh₈ = u
+xh₄ + yh₅ + h₆ − vxh₇ − vyh₈ = v
+
+[ x y 1  0 0 0  −ux −uy ] h = [ u ]
+[ 0 0 0  x y 1  −vx −vy ]     [ v ]</pre>
+<p>Stacking the equations for the nine selected pairs gives A with shape 18 × 8 and b with 18 entries. <code>computeH</code> solves <code>np.linalg.lstsq(A, b, rcond=None)</code>.</p>
+<figure><a href="assets/correspondences.jpg"><img src="assets/correspondences.jpg" width="1650" height="1800" loading="lazy" alt="The nine manually selected matches. The lower rows enlarge the two clusters; matching numbers identify the same point."></a><figcaption>The nine manually selected matches. The lower rows enlarge the two clusters; matching numbers identify the same point.</figcaption></figure>
+<p>The recovered H maps IMG_6205 to IMG_6206 in the original 4284 × 5712 coordinates:</p>
+<pre>[  2.12792260   0.39479755  -574.41169098 ]
+[  0.10419489   1.80427284  -355.62301202 ]
+[  0.00017492   0.00020825   1.00000000 ]</pre>
+<p>The median reprojection error is 11.55 pixels, with a maximum of 19.80. These are fitting errors. The points are clustered, so the mosaics below use more widely distributed matches.</p>
+<p class="small">Numerical system: <a href="results/A.csv">A</a> · <a href="results/b.csv">b</a> · <a href="results/manual_homography.json">Points, H, and errors</a></p>
+
+<h2 id="rectification">A.3 — Warping and rectification</h2>
+<p>Both warps use inverse mapping. Nearest neighbor rounds the source position; bilinear interpolation weights its four neighbors. I mapped four corners of each frame to a rectangle. Target aspect ratios are chosen for display; physical dimensions were not measured.</p>
+<h3>Sliding-door frame</h3><figure><a href="assets/sliding_door_comparison.png"><img src="assets/sliding_door_comparison.png" width="1710" height="570" loading="lazy" alt="IMG_6205.HEIC: selected corners, nearest neighbor, and bilinear. Output: 720 × 480."></a><figcaption>IMG_6205.HEIC: selected corners, nearest neighbor, and bilinear. Output: 720 × 480.</figcaption></figure><figure><a href="assets/sliding_door_detail.png"><img src="assets/sliding_door_detail.png" width="1960" height="650" loading="lazy" alt="Enlarged details show the difference along edges."></a><figcaption>Enlarged details show the difference along edges.</figcaption></figure><p class="small"><a href="assets/sliding_door_source.jpg">Full source</a> · <a href="assets/sliding_door_nearest.png">Nearest-neighbor result</a> · <a href="assets/sliding_door_bilinear.png">Bilinear result</a></p><h3>Side window pane</h3><figure><a href="assets/window_pane_comparison.png"><img src="assets/window_pane_comparison.png" width="1710" height="570" loading="lazy" alt="IMG_6211.HEIC: selected corners, nearest neighbor, and bilinear. Output: 360 × 480."></a><figcaption>IMG_6211.HEIC: selected corners, nearest neighbor, and bilinear. Output: 360 × 480.</figcaption></figure><figure><a href="assets/window_pane_detail.png"><img src="assets/window_pane_detail.png" width="1960" height="650" loading="lazy" alt="Enlarged details show the difference along edges."></a><figcaption>Enlarged details show the difference along edges.</figcaption></figure><p class="small"><a href="assets/window_pane_source.jpg">Full source</a> · <a href="assets/window_pane_nearest.png">Nearest-neighbor result</a> · <a href="assets/window_pane_bilinear.png">Bilinear result</a></p>
+<p>Nearest neighbor leaves more visible steps along edges. Bilinear is smoother, but takes longer and slightly softens detail.</p>
+<table><thead><tr><th scope="col">Image</th><th scope="col">Output size</th><th scope="col">Nearest</th><th scope="col">Bilinear</th></tr></thead><tbody><tr><td>Sliding-door frame</td><td>720 × 480</td><td>8.86 ms</td><td>34.76 ms</td></tr><tr><td>Side window pane</td><td>360 × 480</td><td>4.59 ms</td><td>15.80 ms</td></tr></tbody></table>
+<p class="small">Median of seven runs after one warm-up, alternating method order, on an arm64 Mac. Both methods use NumPy; times exclude loading and saving. <a href="results/rectification.json">Corners, homographies, and timings</a>.</p>
+
+<h2 id="mosaics">A.4 — Blending mosaics</h2>
+<p>The additional matches come from SIFT with a custom RANSAC filter. Each of 11 pairs has 64 saved matches. The homography solve centers and scales coordinates first, then undoes that normalization. Median fitting errors range from 0.15 to 0.60 working-image pixels.</p>
+<details><summary>Additional correspondences</summary><figure><a href="assets/additional_matches.jpg"><img src="assets/additional_matches.jpg" width="1760" height="2200" loading="lazy" alt="Sixteen of the 64 automatic matches for one pair from each group."></a><figcaption>Sixteen of the 64 automatic matches for one pair from each group.</figcaption></figure></details>
+<p>I transform the image boundaries to find the canvas, round minima down and maxima up, then translate the result into array coordinates. Each source is sampled with bilinear interpolation. Feather weights increase with distance from its edges:</p>
+<pre>I(out) = Σ wᵢ Iᵢ / Σ wᵢ</pre>
+<p>Coverage masks keep real black pixels valid. Uncovered parts of the canvas stay black. Feathering reduces seams, though small alignment errors remain around some foreground edges.</p>
+<figure><a href="assets/mosaic_1.jpg"><img src="assets/mosaic_1.jpg" width="1400" height="1425" loading="lazy" alt="Images 6205–6207 and their feather-blended mosaic."></a><figcaption>Images 6205–6207 and their feather-blended mosaic.</figcaption></figure><figure><a href="assets/mosaic_2.jpg"><img src="assets/mosaic_2.jpg" width="1400" height="1425" loading="lazy" alt="Images 6208–6210 and their feather-blended mosaic."></a><figcaption>Images 6208–6210 and their feather-blended mosaic.</figcaption></figure><figure><a href="assets/mosaic_3.jpg"><img src="assets/mosaic_3.jpg" width="1400" height="1425" loading="lazy" alt="Images 6211–6213 and their feather-blended mosaic."></a><figcaption>Images 6211–6213 and their feather-blended mosaic.</figcaption></figure>
+
+<h2 id="cylindrical">A.5 — Bells and whistles: cylindrical projection</h2>
+<p>I combined all nine images on a cylinder, using IMG_6209 as the reference. For a cylinder pixel (u, v), the source sample is:</p>
+<pre>θ = u/f
+r = [sin θ, v/f, cos θ]ᵀ
+pᵢ = Hᵢ⁻¹ K r       (divide by the third coordinate)</pre>
+<p>K uses focal length f and the reference image center. This samples each original source directly, then applies the same feather blend. The choice f = 900 is visual, not a camera calibration.</p>
+<figure><a href="assets/projections.jpg"><img src="assets/projections.jpg" width="2200" height="1100" loading="lazy" alt="All nine images: planar projection on the left, cylindrical projection with f = 900 on the right."></a><figcaption>All nine images: planar projection on the left, cylindrical projection with f = 900 on the right.</figcaption></figure>
+<figure><a href="assets/focal_lengths.jpg"><img src="assets/focal_lengths.jpg" width="2200" height="880" loading="lazy" alt="Cylindrical results with f = 600, 900, and 1200 working-image pixels."></a><figcaption>Cylindrical results with f = 600, 900, and 1200 working-image pixels.</figcaption></figure>
+<p>The cylindrical result reduces stretching at the sides. Smaller f gives stronger curvature. Feathering cannot fully correct parallax or errors accumulated while composing homographies.</p>
+
+<h2 id="code">Code and data</h2>
+<p><a href="https://github.com/RishbhaJain/computer-vision-cs280A/tree/main/project4">GitHub folder</a> · <a href="a2.ipynb" download>Notebook</a> · <a href="code.zip">Code ZIP</a> · <a href="README.md">Run instructions</a></p>
+<p class="small">Implementations: <a href="part_a.py">Homography and inverse warps</a> · <a href="panorama_extensions.py">Mosaics and cylindrical projection</a>. <a href="results/panoramas.json">Mosaic transforms and fitting errors</a>. OpenCV is used only to prepare SIFT matches; homography fitting, RANSAC, warping, and interpolation are implemented in NumPy.</p>
+<footer class="small"><a href="../">Project 3</a> · Photos by Rishbha Jain</footer>
+</body>
+</html>

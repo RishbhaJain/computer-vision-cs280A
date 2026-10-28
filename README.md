@@ -10,3 +10,7 @@
 Each part keeps its notebook and exported figures together. Part A figures are grouped by run to preserve different experiments. Save future figure uploads under `partA/images/` or `partB/images/` as appropriate.
 
 The repository currently includes Part A bells and whistles figures; other Part A figures still need to be exported and uploaded. The project webpage and submission PDF are separate deliverables.
+
+## Project 4: Image Warping and Mosaicing
+
+[Webpage](https://rishbhajain.github.io/computer-vision-cs280A/project4/) · [Code and notebook](project4/)
