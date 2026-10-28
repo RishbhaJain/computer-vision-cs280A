@@ -108,7 +108,7 @@ details{{margin:18px 0}}summary{{cursor:pointer}}code{{font-size:.9em}}footer{{m
 <nav aria-label="Sections"><a href="#photos">A.1 Photos</a><a href="#homography">A.2 Homography</a><a href="#rectification">A.3 Rectification</a><a href="#mosaics">A.4 Mosaics</a><a href="#cylindrical">A.5 Cylindrical</a><a href="#code">Code</a></nav>
 
 <h2 id="photos">A.1 — Photos</h2>
-<p>These nine photos show overlapping views of the same courtyard. I used three groups for the mosaics: 6205–6207, 6208–6210, and 6211–6213. The working images are 900 × 1200 pixels.</p>
+<p>I took these nine photos from one spot, rotating the camera to cover the courtyard. I used three groups for the mosaics: 6205–6207, 6208–6210, and 6211–6213. The working images are 900 × 1200 pixels.</p>
 {figure('sources.jpg', 'The nine source photos, in order. Original HEIC files are included with the code.')}
 
 <h2 id="homography">A.2 — Recovering the homography</h2>
@@ -126,7 +126,7 @@ xh₄ + yh₅ + h₆ − vxh₇ − vyh₈ = v
 {figure('correspondences.jpg', 'The nine manually selected matches. The lower rows enlarge the two clusters; matching numbers identify the same point.')}
 <p>The recovered H maps IMG_6205 to IMG_6206 in the original 4284 × 5712 coordinates:</p>
 <pre>{h_text}</pre>
-<p>The median reprojection error is {np.median(errors):.2f} pixels, with a maximum of {errors.max():.2f}. These are fitting errors. The points are clustered, so the mosaics below use more widely distributed matches.</p>
+<p>For the nine points used to fit H, the median distance between predicted and selected positions is {np.median(errors):.2f} pixels; the maximum is {errors.max():.2f}. The mosaics use additional matches spread across the overlap.</p>
 <p class="small">Numerical system: <a href="results/A.csv">A</a> · <a href="results/b.csv">b</a> · <a href="results/manual_homography.json">Points, H, and errors</a></p>
 
 <h2 id="rectification">A.3 — Warping and rectification</h2>
